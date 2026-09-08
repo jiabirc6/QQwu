@@ -195,7 +195,7 @@
         restitution: 0.22, liquidRestitution: 0.055, maximumBounceHeightRatio: 0.55,
         minimumRadiusRatio: 0.76, liquidMinimumRadiusRatio: 0.34, impactRadiusAllowance: 0.24,
         floorImpactCompression: 0.52, liquidFloorImpactCompression: 0.82,
-        packingRadiusRatio: 0.96, contactFriction: 0.55, minimumBoundaryAreaRatio: 0.8, restingDrag: 20, restingInternalDamping: 16,
+        minimumBoundaryAreaRatio: 0.8, restingDrag: 20, restingInternalDamping: 16,
         impactShapeRate: 4.0, impactThreshold: 80, impactCooldownSeconds: 0.1, impactDecay: 2.8,
         maximumSpeed: 2400, ...parameters,
       };
@@ -209,7 +209,7 @@
       this.accumulator = 0;
       this.lastLiquid = 0;
       this.lastTilt = 0;
-      this.diagnostics = { sleepingBodies: 0, substeps: 0, membraneRepairs: 0, volumeRecoveries: 0 };
+      this.diagnostics = { sleepingBodies: 0, substeps: 0, membraneRepairs: 0 };
     }
 
     add(level, x, y, r, options = {}) {
@@ -224,7 +224,7 @@
         return { x: x + Math.cos(angle) * initialRadius, y: y + Math.sin(angle) * initialRadius, vx: velocityX, vy: velocityY, oldX: 0, oldY: 0 };
       });
       const body = {
-        id: this.nextId++, level, r, x, y, stepStartX: x, stepStartY: y, vx: velocityX, vy: velocityY, age: 0, points,
+        id: this.nextId++, level, r, x, y, vx: velocityX, vy: velocityY, age: 0, points,
         initialRatio, growthSeconds: initialRatio < 1 ? Math.max(options.growthSeconds ?? 0.35, 0.15) : 0,
         currentRadius: initialRadius, inverseMass: 900 / (r * r),
         edgeLambdas: new Float64Array(POINT_COUNT), bendLambdas: new Float64Array(POINT_COUNT),
@@ -490,50 +490,6 @@
       }
     }
 
-    restoreMinimumArea(body) {
-      // A rare last-pass corner squeeze must not erase a small fruit's volume.
-      // Affine expansion preserves vertex order; translate the whole shape inside.
-      const areaScale = body.targetArea * .8 / Math.max(body.area, 1);
-      const scaleX = Math.min(Math.sqrt(areaScale), (this.right - this.left - 2) / Math.max(body.maxX - body.minX, 1));
-      const scaleY = areaScale / scaleX;
-      for (const point of body.points) {
-        point.x = body.x + (point.x - body.x) * scaleX;
-        point.y = body.y + (point.y - body.y) * scaleY;
-      }
-      this.updateGeometry(body);
-      const shiftX = Math.max(this.left + 1 - body.minX, 0) - Math.max(body.maxX - this.right + 1, 0);
-      const shiftY = -Math.max(body.maxY - this.floor + 1, 0);
-      for (const point of body.points) { point.x += shiftX; point.y += shiftY; }
-      this.updateGeometry(body);
-      this.wake(body);
-      this.diagnostics.volumeRecoveries++;
-    }
-
-    constrainPackingDistance(first, second) {
-      // A firm interior keeps small fruit wedged between larger neighbours.
-      // The membrane can still oscillate; softening releases this constraint.
-      const dx = second.x - first.x, dy = second.y - first.y;
-      const distance = Math.hypot(dx, dy);
-      const minimum = (first.currentRadius + second.currentRadius) * this.parameters.packingRadiusRatio * (1 - this.lastLiquid);
-      if (distance >= minimum || distance < 0.00001) return;
-      const overlap = Math.min(minimum - distance, 12);
-      if (overlap > .55) { this.wake(first); this.wake(second); }
-      const firstMass = first.isSleeping ? 0 : first.inverseMass;
-      const secondMass = second.isSleeping ? 0 : second.inverseMass;
-      if (!firstMass && !secondMass) return;
-      const nx = dx / distance, ny = dy / distance;
-      if (ny > .3) first.hasSupport = true;
-      if (ny < -.3) second.hasSupport = true;
-      for (const [body, amount] of [[first, -overlap * firstMass / (firstMass + secondMass)], [second, overlap * secondMass / (firstMass + secondMass)]]) {
-        if (!amount) continue;
-        for (const point of body.points) {
-          point.x += nx * amount; point.y += ny * amount;
-          if (body.isPlacementRepair) { point.repairX += nx * amount; point.repairY += ny * amount; }
-        }
-        this.updateGeometry(body);
-      }
-    }
-
     collideVertices(source, target) {
       let minimumOverlap = Infinity, normalX = 0, normalY = 0;
       for (const polygon of [source, target]) {
@@ -606,23 +562,12 @@
       const bulkSeparation = isBirthRepair ? minimumOverlap : minimumOverlap - Math.min(minimumOverlap * localFraction, maximumLocalDeflection);
       const sourceShift = bulkSeparation * sourceMass / (sourceMass + targetMass);
       const targetShift = bulkSeparation * targetMass / (sourceMass + targetMass);
-      const tangentX = -normalY, tangentY = normalX;
-      let frictionDisplacement = 0;
-      if (!isBirthRepair && this.parameters.contactFriction > 0) {
-        const relativeX = target.x - target.stepStartX - source.x + source.stepStartX;
-        const relativeY = target.y - target.stepStartY - source.y + source.stepStartY;
-        const supportDisplacement = this.parameters.gravity * FIXED_STEP ** 2 * Math.abs(normalY);
-        const frictionLimit = this.parameters.contactFriction * (1 - this.lastLiquid) * (minimumOverlap + supportDisplacement);
-        frictionDisplacement = clamp(relativeX * tangentX + relativeY * tangentY, -frictionLimit, frictionLimit);
-      }
-      const sourceFriction = frictionDisplacement * sourceMass / (sourceMass + targetMass);
-      const targetFriction = frictionDisplacement * targetMass / (sourceMass + targetMass);
       if (sourceMass) for (const point of source.points) {
-        point.x += -normalX * sourceShift + tangentX * sourceFriction; point.y += -normalY * sourceShift + tangentY * sourceFriction;
+        point.x -= normalX * sourceShift; point.y -= normalY * sourceShift;
         if (isBirthRepair) { point.repairX -= normalX * sourceShift; point.repairY -= normalY * sourceShift; }
       }
       if (targetMass) for (const point of target.points) {
-        point.x += normalX * targetShift - tangentX * targetFriction; point.y += normalY * targetShift - tangentY * targetFriction;
+        point.x += normalX * targetShift; point.y += normalY * targetShift;
         if (isBirthRepair) { point.repairX += normalX * targetShift; point.repairY += normalY * targetShift; }
       }
       let sourceSupport = -Infinity, targetSupport = Infinity;
@@ -658,7 +603,6 @@
         this.time += FIXED_STEP;
         const airRetention = Math.exp(-this.parameters.airDrag * FIXED_STEP);
         for (const body of this.bodies) {
-          body.stepStartX = body.x; body.stepStartY = body.y;
           body.age += FIXED_STEP;
           body.hasSupport = false;
           body.impactExcitation *= Math.exp(-(this.parameters.impactDecay + liquid * (5.5 - this.parameters.impactDecay)) * FIXED_STEP);
@@ -693,7 +637,7 @@
               }
               const firstContact = this.collideVertices(first, second);
               const secondContact = false;
-              if (firstContact || secondContact) { this.contacts.set(key, [first, second]); this.constrainPackingDistance(first, second); }
+              if (firstContact || secondContact) this.contacts.set(key, [first, second]);
             }
           }
           for (const body of this.bodies) if (!body.isSleeping) this.constrainBoundaries(body, liquid);
@@ -752,7 +696,6 @@
             internalSpeedSquared += (point.vx - body.vx) ** 2 + (point.vy - body.vy) ** 2;
           }
           this.updateGeometry(body);
-          if (body.area < body.targetArea * .75) this.restoreMinimumArea(body);
           if (body.age > body.growthSeconds + 0.5 && body.hasSupport && liquid < 0.01 && Math.abs(tilt) < 0.01 && body.impactExcitation < 0.012 && Math.hypot(body.vx, body.vy) < 5 && internalSpeedSquared / POINT_COUNT < 36 && Math.abs(body.area / body.targetArea - 1) < 0.035) body.stillSeconds += FIXED_STEP;
           else body.stillSeconds = 0;
           if (body.stillSeconds > 0.65) {
