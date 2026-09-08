@@ -7,6 +7,29 @@
   <meta name="theme-color" content="#f5f2e8">
   <title>QQ屋 · 挑战版</title>
   <link rel="icon" href="data:,">
+<script>
+(function () {
+  'use strict';
+  var setIcon = function () {
+    var goal = document.getElementById('goal-fruit');
+    var link = document.querySelector('link[rel="icon"]');
+    if (!goal || !link) return false;
+    try {
+      var d = goal.getContext('2d').getImageData(0, 0, goal.width, goal.height).data;
+      var painted = false;
+      for (var i = 3; i < d.length; i += 401) if (d[i] > 0) { painted = true; break; }
+      if (!painted) return false;
+    } catch (e) { return false; }
+    var canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 128;
+    canvas.getContext('2d').drawImage(goal, 0, 0, goal.width, goal.height, 0, 0, 128, 128);
+    link.href = canvas.toDataURL('image/png');
+    return true;
+  };
+  var timer = window.setInterval(function () { if (setIcon()) window.clearInterval(timer); }, 250);
+  window.setTimeout(function () { window.clearInterval(timer); }, 15000);
+})();
+</script>
   <style>
 :root{--paper:#f5f2e8;--cream:#fffdf5;--ink:#244638;--muted:#738276;--line:#d3d9c8;--leaf:#426b47;--lime:#dbe98d;--coral:#ec7768;--serif:"Songti SC","STSong","Noto Serif CJK SC",serif;--sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
 *{box-sizing:border-box}html{min-height:100%;background:var(--paper)}body{margin:0;color:var(--ink);font:14px/1.65 var(--sans);background:radial-gradient(ellipse at 52% 32%,#fffff780,transparent 65%);overflow-x:hidden}button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}button:disabled{cursor:default}button:focus-visible,canvas:focus-visible{outline:3px solid #7d9b46;outline-offset:5px}button,canvas,a{-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}.page-grain{position:fixed;inset:0;pointer-events:none;opacity:.09;background-image:radial-gradient(#66734e 0.6px,transparent .6px);background-size:4px 4px;z-index:-1}.masthead{max-width:1340px;margin:auto;padding:22px 40px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #dce0d280}.wordmark{display:flex;align-items:center;gap:9px;line-height:1}.wordmark>canvas{width:47px;height:47px}.wordmark>span:nth-child(2){font:700 26px/1 var(--serif);letter-spacing:3px}.wordmark small{display:block;font:9px/1 var(--sans);letter-spacing:2.7px;margin-top:9px}.edition{align-self:center;border-left:1px solid var(--line);margin-left:12px;padding-left:18px;font-size:11px;color:var(--muted);letter-spacing:2px}.utilities{display:flex;gap:8px}.icon-button{position:relative;display:flex;align-items:center;justify-content:center;gap:7px;height:42px;min-width:52px;border:0;background:transparent;border-radius:9px;padding:0 10px;font-size:11px;color:#617468;transition:background .2s,color .2s}.icon-button:hover{background:#e6eadb;color:var(--ink)}.icon-button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.muted-mark{position:absolute;left:19px;top:10px;width:1.5px;height:23px;transform:rotate(-42deg);background:var(--paper);border-left:1.3px solid #798a7b}.icon-button[aria-pressed=true] .muted-mark{display:none}
