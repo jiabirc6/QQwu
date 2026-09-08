@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; media-src data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self' https://lb.190003.xyz; media-src data:">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f5f2e8">
   <title>QQ屋 · 挑战版</title>
@@ -86,6 +86,8 @@
       <button id="help-button" class="icon-button" aria-label="怎么玩" title="怎么玩"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.4 9a2.7 2.7 0 1 1 4.2 2.3c-1.2.8-1.6 1.1-1.6 2.7M12 17h.01"/></svg><span>玩法</span></button>
       <button id="sound-button" class="icon-button" aria-label="开启声音" aria-pressed="false" title="开启声音"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5M15 8c2 2 2 6 0 8M18 5c4 4 4 10 0 14"/></svg><span>声音</span><i class="muted-mark"></i></button>
       <button id="pause-button" class="icon-button" aria-label="暂停游戏" title="暂停 · P"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg><span>暂停</span></button>
+      <button id="score-board-button" class="icon-button" aria-label="排行榜" title="排行榜"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20v-6M10 20v-10M14 20v-8M18 20v-4"/></svg><span>排行</span></button>
+      <button id="score-auth-button" class="icon-button" aria-label="登录" title="登录后可同步最高分"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/></svg><span>登录</span></button>
     </nav>
   </header>
 
@@ -152,7 +154,7 @@
     <button id="lesson-retry" class="text-button" hidden>再试一次</button>
   </dialog>
   <dialog id="restart-dialog" class="paper-dialog small-dialog"><span class="overline">新的一局</span><h2>换一池新水果？</h2><p class="dialog-lead">这一局会重新开始，最高纪录会保留。</p><div class="dialog-actions"><button id="confirm-restart" class="primary-button">重新开始</button><button class="secondary-button" data-close="restart-dialog">接着玩</button></div></dialog>
-  <dialog id="result-dialog" class="paper-dialog result-dialog"><canvas id="result-fruit" width="260" height="260" aria-hidden="true"></canvas><span class="overline" id="result-kicker">这一池，收获满满</span><h2 id="result-title">又离大西瓜近了一点。</h2><strong id="result-score">0</strong><p class="dialog-lead" id="result-copy"></p><div class="dialog-actions"><button id="result-primary" class="primary-button">再来一局 <span>↗</span></button><button id="result-secondary" class="secondary-button" hidden>继续挑战</button></div></dialog>
+  <dialog id="auth-dialog" class="paper-dialog small-dialog"><button class="dialog-close" data-close="auth-dialog" aria-label="关闭">×</button><span class="overline">账号</span><h2 id="auth-title">登录</h2><p class="dialog-lead" id="auth-copy"></p><div id="auth-form"><input id="auth-username" type="text" maxlength="16" autocomplete="username" placeholder="用户名(2~16位,支持中文)" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d2ddc1;border-radius:9px;font:inherit;background:#fffdf5;margin-bottom:10px"><input id="auth-password" type="password" maxlength="64" autocomplete="current-password" placeholder="密码(至少6位)" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d2ddc1;border-radius:9px;font:inherit;background:#fffdf5"><p id="auth-error" role="alert" style="margin:8px 0 0;font-size:11px;color:#bc6351;min-height:15px"></p></div><div id="auth-loggedin" style="display:none;text-align:center;margin:10px 0 16px"><p style="margin:0 0 10px;font-size:14px;color:#486c3c">已登录：<strong id="auth-username-label"></strong></p><p style="margin:0 0 12px;font-size:12px;color:#7b887c">最高积分 <strong id="auth-best-label">0</strong> · 共 <strong id="auth-games-label">0</strong> 局</p></div><div class="dialog-actions"><button id="auth-submit" class="primary-button">登录 <span>↗</span></button><button id="auth-logout" class="secondary-button" hidden>退出登录</button><button id="auth-switch" class="secondary-button" type="button">没有账号？注册</button></div></dialog><dialog id="leaderboard-dialog" class="paper-dialog small-dialog"><button class="dialog-close" data-close="leaderboard-dialog" aria-label="关闭排行榜">×</button><span class="overline">全服总榜 · 最高积分</span><h2 style="margin-top:4px">排行榜</h2><p id="lb-status" class="dialog-lead">加载中…</p><div id="lb-list" style="max-height:46vh;overflow:auto;margin-top:-6px"></div><p id="lb-me" style="margin:12px 0 0;font-size:12px;color:#7b887c"></p></dialog><dialog id="result-dialog" class="paper-dialog result-dialog"><canvas id="result-fruit" width="260" height="260" aria-hidden="true"></canvas><span class="overline" id="result-kicker">这一池，收获满满</span><h2 id="result-title">又离大西瓜近了一点。</h2><strong id="result-score">0</strong><p class="dialog-lead" id="result-copy"></p><div class="dialog-actions"><button id="result-primary" class="primary-button">再来一局 <span>↗</span></button><button id="result-secondary" class="secondary-button" hidden>继续挑战</button></div></dialog>
 <dialog id="motion-lab-dialog" class="paper-dialog motion-lab-dialog" aria-labelledby="motion-lab-title" aria-describedby="motion-lab-description">
   <button type="button" class="dialog-close" data-motion-close aria-label="关闭慢镜头">×</button>
   <header class="motion-lab-heading">
@@ -2288,6 +2290,7 @@ window.MELON_ATLAS='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABagAAAQ+CAYAAA
     painter.drawIcon(byId('result-fruit'), isWin ? FINAL_LEVEL : Math.min(Math.max(game.state.highestLevel, 2), FINAL_LEVEL));
     openModal('result-dialog');
     if (isWin) byId('result-secondary').focus({ preventScroll: true });
+    submitScore(game.state.score, isWin);
   }
 
   function addMergeEffects(event) {
@@ -2480,6 +2483,136 @@ window.MELON_ATLAS='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABagAAAQ+CAYAAA
     button.addEventListener('pointerdown', event => { if (game.state.isPaused || game.state.isOver || activeDialog) return; event.preventDefault(); button.setPointerCapture(event.pointerId); heldTilt = direction; game.setTilt(direction); button.classList.add('is-held'); });
     for (const eventName of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(eventName, clear);
   }
+
+
+  // ===== 在线积分与排行榜(lb.190003.xyz) =====
+  const SCORE_API = 'https://lb.190003.xyz/api';
+  const SCORE_AUTH_KEY = 'qqwu-score-auth';
+  let scoreSession = null;
+  try { const raw = localStorage.getItem(SCORE_AUTH_KEY); if (raw) scoreSession = JSON.parse(raw); } catch (_) {}
+  const scoreFetch = (path, options = {}) => {
+    const headers = Object.assign({}, options.headers || {});
+    if (scoreSession && scoreSession.token) headers.Authorization = 'Bearer ' + scoreSession.token;
+    if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    return fetch(SCORE_API + path, Object.assign({}, options, { headers, signal: ctrl.signal }))
+      .then(r => r.json().then(b => ({ status: r.status, body: b })).catch(() => ({ status: r.status, body: null })))
+      .finally(() => clearTimeout(timer));
+  };
+  const saveScoreSession = () => {
+    try {
+      if (scoreSession && scoreSession.token) localStorage.setItem(SCORE_AUTH_KEY, JSON.stringify(scoreSession));
+      else localStorage.removeItem(SCORE_AUTH_KEY);
+    } catch (_) {}
+  };
+  const applyScoreAuthUI = () => {
+    const btn = byId('score-auth-button');
+    if (!btn) return;
+    const label = btn.querySelector('span');
+    if (scoreSession && scoreSession.token) { label.textContent = scoreSession.username; btn.title = '已登录：' + scoreSession.username + '，点击查看账号'; }
+    else { label.textContent = '登录'; btn.title = '登录后可同步最高分并参加排行榜'; }
+  };
+  const escapeHtml = (str) => String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let authMode = 'login';
+  function renderAuthDialog() {
+    const logged = Boolean(scoreSession && scoreSession.token);
+    byId('auth-form').style.display = logged ? 'none' : 'block';
+    byId('auth-loggedin').style.display = logged ? 'block' : 'none';
+    byId('auth-logout').hidden = !logged;
+    byId('auth-switch').hidden = logged;
+    byId('auth-submit').hidden = logged;
+    if (logged) {
+      byId('auth-title').textContent = '我的账号';
+      byId('auth-copy').textContent = '';
+      byId('auth-username-label').textContent = scoreSession.username;
+      byId('auth-best-label').textContent = '…';
+      byId('auth-games-label').textContent = '…';
+      scoreFetch('/me').then(res => {
+        if (res.status === 200 && res.body && res.body.user) {
+          byId('auth-best-label').textContent = String(res.body.user.best_score);
+          byId('auth-games-label').textContent = String(res.body.user.games_played);
+        }
+      }).catch(() => {});
+    } else {
+      const registering = authMode === 'register';
+      byId('auth-title').textContent = registering ? '注册账号' : '登录';
+      byId('auth-copy').textContent = registering ? '注册后可同步最高积分，冲进全服排行榜。' : '登录后每局成绩会自动提交到排行榜。';
+      byId('auth-submit').innerHTML = registering ? '注册 <span>↗</span>' : '登录 <span>↗</span>';
+      byId('auth-switch').textContent = registering ? '已有账号？去登录' : '没有账号？注册';
+      byId('auth-error').textContent = '';
+    }
+  }
+  function openAuthDialog() {
+    authMode = scoreSession && scoreSession.token ? 'login' : 'login';
+    authMode = 'login';
+    renderAuthDialog();
+    openModal('auth-dialog');
+    if (!scoreSession || !scoreSession.token) byId('auth-username').focus({ preventScroll: true });
+  }
+  function submitAuth() {
+    const user = byId('auth-username').value.trim();
+    const pass = byId('auth-password').value;
+    if (!user || !pass) { byId('auth-error').textContent = '请填写用户名和密码'; return; }
+    byId('auth-submit').disabled = true;
+    const registering = authMode === 'register';
+    scoreFetch(registering ? '/register' : '/login', { method: 'POST', body: JSON.stringify({ username: user, password: pass }) })
+      .then(res => {
+        byId('auth-submit').disabled = false;
+        if (res.status === 200 || res.status === 201) {
+          scoreSession = { token: res.body.token, username: res.body.user.username };
+          saveScoreSession(); applyScoreAuthUI(); closeModal();
+          scoreFetch('/me').then(r2 => {
+            if (r2.status === 200 && r2.body && r2.body.user && r2.body.user.best_score > bestScore) {
+              bestScore = r2.body.user.best_score; savePreferences(); updateHud();
+            }
+          }).catch(() => {});
+        } else if (res.body && res.body.error) byId('auth-error').textContent = res.body.error;
+        else byId('auth-error').textContent = '网络异常，请稍后再试';
+      })
+      .catch(() => { byId('auth-submit').disabled = false; byId('auth-error').textContent = '网络异常，请稍后再试'; });
+  }
+  function logoutAuth() { scoreSession = null; saveScoreSession(); applyScoreAuthUI(); closeModal(); }
+  function openLeaderboard() {
+    openModal('leaderboard-dialog');
+    byId('lb-status').textContent = '加载中…';
+    byId('lb-list').innerHTML = '';
+    byId('lb-me').textContent = '';
+    scoreFetch('/leaderboard?limit=50').then(res => {
+      if (res.status !== 200 || !res.body || !res.body.list) { byId('lb-status').textContent = '排行榜服务暂不可用，请稍后再试。'; return; }
+      byId('lb-status').textContent = '';
+      const list = res.body.list;
+      byId('lb-list').innerHTML = list.length
+        ? list.map(row => {
+            const rank = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : String(row.rank);
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid #eef1e3">' +
+              '<span style="font:14px Georgia;color:#7d945e;min-width:32px">' + rank + '</span>' +
+              '<span style="flex:1;color:#244638;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(row.username) + '</span>' +
+              '<span style="font:15px Georgia;color:#5d9970">' + Number(row.best_score).toLocaleString('zh-CN') + '</span></div>';
+          }).join('')
+        : '<p style="margin:8px 0;color:#93a080">还没有人上榜，快来抢占第一名！</p>';
+      if (scoreSession && scoreSession.token) {
+        scoreFetch('/leaderboard/me').then(r2 => {
+          if (r2.status === 200 && r2.body) {
+            if (r2.body.ranked) byId('lb-me').textContent = '我的排名：第 ' + r2.body.rank + ' 名 / 共 ' + r2.body.total + ' 人 · 最高 ' + Number(r2.body.best).toLocaleString('zh-CN') + ' 分';
+            else byId('lb-me').textContent = '我还没有上榜成绩（共 ' + r2.body.total + ' 人上榜）。登录后结束一局即可上榜。';
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => { byId('lb-status').textContent = '排行榜服务暂不可用，请稍后再试。'; });
+  }
+  function submitScore(score, isWatermelon) {
+    if (!scoreSession || !scoreSession.token) return;
+    scoreFetch('/scores', { method: 'POST', body: JSON.stringify({ score: score, isWatermelon: !!isWatermelon }) }).catch(() => {});
+  }
+  byId('score-auth-button').onclick = openAuthDialog;
+  byId('score-board-button').onclick = openLeaderboard;
+  byId('auth-submit').onclick = submitAuth;
+  byId('auth-logout').onclick = logoutAuth;
+  byId('auth-switch').onclick = () => { authMode = authMode === 'register' ? 'login' : 'register'; renderAuthDialog(); byId('auth-username').focus({ preventScroll: true }); };
+  byId('auth-username').addEventListener('keydown', e => { if (e.key === 'Enter' && !byId('auth-submit').disabled) submitAuth(); });
+  byId('auth-password').addEventListener('keydown', e => { if (e.key === 'Enter' && !byId('auth-submit').disabled) submitAuth(); });
+  applyScoreAuthUI();
 
   byId('help-button').onclick = () => openModal('help-dialog');
   byId('help-practice').onclick = () => openLesson(false);
